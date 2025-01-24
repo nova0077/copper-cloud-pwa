@@ -475,3 +475,16 @@ if (checkAuthentication()) {
 } else {
     showNotification("Login is Required");
 }
+
+navigator.mediaDevices
+  .getUserMedia({ video: { facingMode: "environment" } })
+  .then((stream) => {
+    const videoElement = document.querySelector("#interactive");
+    videoElement.srcObject = stream;
+    videoElement.play();
+    console.log("Camera initialized successfully.");
+  })
+  .catch((err) => {
+    console.error("Camera access failed:", err);
+    alert(`Camera access failed: ${err.message}`);
+  });

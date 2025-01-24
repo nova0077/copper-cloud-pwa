@@ -27,7 +27,7 @@ function checkAuthentication() {
     }
 
     // Redirect to login page if not authenticated
-    window.location.href = 'index.html';
+    window.location.href = 'login.html';
     return false;
 }
 

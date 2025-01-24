@@ -274,7 +274,7 @@ function startScanner() {
         function (err) {
             if (err) {
                 console.error('Error initializing scanner:', err.message);
-                alert('Failed to initialize scanner. Check permissions.');
+                alert('Failed to initialize scanner. Check permissions.' ,err.message);
                 return;
             }
             console.log('Scanner initialized successfully.');

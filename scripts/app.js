@@ -479,7 +479,7 @@ if (checkAuthentication()) {
 navigator.mediaDevices
   .getUserMedia({ video: { facingMode: "environment" } })
   .then((stream) => {
-    const videoElement = document.querySelector("#interactive");
+    const videoElement = document.querySelector("#video-element");
     videoElement.srcObject = stream;
     videoElement.play();
     console.log("Camera initialized successfully.");

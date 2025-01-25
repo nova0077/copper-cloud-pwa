@@ -262,11 +262,10 @@ function startScanner() {
         type: "LiveStream",
         target: videoElement, // Attach to video element
         constraints: {
-          facingMode: "environment", // Rear camera
-          width: 640,
-          height: 300,
-          aspectRatio: { min: 1, max: 2 }
-        },
+          facingMode: { ideal: "environment" }, // Prefer rear camera
+          width: { min: 640, ideal: 1280 },
+          height: { min: 480, ideal: 720 },
+        },        
       },
       decoder: {
         readers: ["ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader"],

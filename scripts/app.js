@@ -103,19 +103,26 @@ scanCodeButton.addEventListener('click', () => {
 
 async function syncItemsToShow() {
   const items = await getItemsFromIndexedDB(); // Get items from IndexedDB
-
+  // Get the table where the items will be added
+  const table = document.querySelector('#itemsTable');
   // Loop through each item and add it to the table
   items.forEach(item => {
-    const status = 'PENDING'; // Default to "PENDING" status if it's not synced
-    addToTable(item, status); // Add the item to the table
+    // Check if a row with this item's ID already exists
+    const existingRow = table.querySelector(`#item-${item.id}`);
+    // If the row doesn't exist, add it
+    if (!existingRow) {
+      const status = 'PENDING'; // Default to "PENDING" status if it's not synced
+      addToTable(item, status); // Add the item to the table
+    }
   });
 }
 
+let isTableUpToDate = false;
 viewItemsButton.addEventListener('click', () => {
   homeScreen.style.display = 'none';
   scannerScreen.style.display = 'none';
   itemsScreen.style.display = 'block';
-  syncItemsToShow()
+  syncItemsToShow();
 });
 
 document.getElementById('back-to-home').addEventListener('click', () => {
@@ -232,54 +239,55 @@ async function requestPermissions() {
 }
 
 startScannerButton.addEventListener('click', () => {
-    if (isScanning) {
-        Quagga.stop();
-        startScannerButton.textContent = 'Start Scanner';
-        isScanning = false;
-    } else {
-        startScanner();
-        startScannerButton.textContent = 'Stop Scanner';
-        isScanning = true;
-    }
+  if (isScanning) {
+    Quagga.stop();
+    startScannerButton.textContent = 'Start Scanner';
+    isScanning = false;
+  } else {
+    startScanner();
+    startScannerButton.textContent = 'Stop Scanner';
+    isScanning = true;
+  }
 });
 
 function startScanner() {
-    Quagga.init({
-        inputStream: {
-            name: "Live",
-            type: "LiveStream",
-            target: document.querySelector("#interactive"),
-            constraints: {
-                facingMode: "environment",
-                width: 640,
-                height: 300,
-                aspectRatio: { min: 1, max: 2 }
-            },
-        },
-        decoder: {
-            readers: ["ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader"]
-        }
-    }, function(err) {
-        if (err) {
-            console.error(err);
-            return;
-        }
-        Quagga.start();
-    });
+  Quagga.init({
+    inputStream: {
+      name: "Live",
+      type: "LiveStream",
+      target: document.querySelector("#interactive"),
+      constraints: {
+        facingMode: "environment",
+        width: 640,
+        height: 300,
+        aspectRatio: { min: 1, max: 2 }
+      },
+    },
+    decoder: {
+      readers: ["ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader"]
+    }
+  }, function (err) {
+    if (err) {
+      console.error(err);
+      return;
+    }
+    Quagga.start();
+  });
 
-    Quagga.onDetected(function(result) {
-        const code = result.codeResult.code;
-        Quagga.stop();
-        startScannerButton.textContent = 'Start Scanner';
-        isScanning = false;
-        // Process the detected code
-        processDetectedCode(code);
-    });
+  Quagga.onDetected(function (result) {
+    const code = result.codeResult.code;
+    Quagga.stop();
+    startScannerButton.textContent = 'Start Scanner';
+    isScanning = false;
+    // Process the detected code
+    processDetectedCode(code);
+  });
 }
 
 function addToTable(item, status) {
   const table = document.getElementById('itemsTableBody');
   const row = document.createElement('tr');
+  row.id = `item-${item.id}`;
   const formattedTimestamp = new Date(item.timestamp).toLocaleString();
   row.innerHTML = `
         <td>${item.id}</td>
@@ -317,9 +325,13 @@ async function processDetectedCode(barcode) {
         body: JSON.stringify(scannedItem),
         headers: { 'Content-Type': 'application/json' },
       });
-
       if (response.ok) {
         console.log(`Barcode ${barcode} processed successfully.`);
+        let curStatus = 'DONE';
+        if (isOnline)
+          curStatus = 'DONE';
+        else
+          curStatus = 'PENDING';
         addToTable(scannedItem, 'DONE');
       } else {
         console.error('Failed to process barcode online. Saving to IndexedDB.');
@@ -339,16 +351,16 @@ async function processDetectedCode(barcode) {
 }
 
 function saveItemToStorage(item) {
-    const items = getStoredItems();
-    const existingItemIndex = items.findIndex(i => i.id === item.id);
-    
-    if (existingItemIndex >= 0) {
-        items[existingItemIndex] = item;
-    } else {
-        items.unshift(item); // Add new items to the beginning of the list
-    }
-    
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  const items = getStoredItems();
+  const existingItemIndex = items.findIndex(i => i.id === item.id);
+
+  if (existingItemIndex >= 0) {
+    items[existingItemIndex] = item;
+  } else {
+    items.unshift(item); // Add new items to the beginning of the list
+  }
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 }
 
 async function getCurrentLocation() {

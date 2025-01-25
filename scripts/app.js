@@ -263,8 +263,6 @@ function startScanner() {
                 target: videoElement, // Attach to video element
                 constraints: {
                     facingMode: "environment", // Rear camera
-                    width: 640,
-                    height: 480,
                 },
             },
             decoder: {

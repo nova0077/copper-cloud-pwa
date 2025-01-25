@@ -251,25 +251,22 @@ async function requestPermissions() {
 let isProcessing = false;
 
 function startScanner() {
-  const videoElement = document.querySelector("#video-element");
-
-  Quagga.init(
-    {
+  Quagga.init({
       inputStream: {
-        name: "Live",
-        type: "LiveStream",
-        target: videoElement, // Attach to video element
-        constraints: {
-          facingMode: { ideal: "environment" }, // Prefer rear camera
-          width: { min: 640, ideal: 1280 },
-          height: { min: 480, ideal: 720 },
-        },
+          name: "Live",
+          type: "LiveStream",
+          target: document.querySelector("#interactive"),
+          constraints: {
+              facingMode: "environment",
+              width: 640,
+              height: 300,
+              aspectRatio: { min: 1, max: 2 }
+          },
       },
       decoder: {
-        readers: ["ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader"],
-      },
-    },
-    function (err) {
+          readers: ["ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader"]
+      }
+    }, function (err) {
       if (err) {
         console.error('Error initializing scanner:', err.message);
         alert(err);

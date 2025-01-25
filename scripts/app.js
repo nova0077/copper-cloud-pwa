@@ -249,12 +249,22 @@ async function requestPermissions() {
 }
 
 let isProcessing = false;
+let currentStream = null; // To hold the active MediaStream
+
+function stopCurrentStream() {
+  if (currentStream) {
+    currentStream.getTracks().forEach((track) => track.stop()); // Stop all tracks
+    console.log("Camera stream stopped.");
+    currentStream = null; // Reset the stream
+  }
+}
+
 
 function startScanner() {
+  stopCurrentStream();
   const html5QrCode = new Html5Qrcode("interactive"); // Attach to your video container
   const config = {
-    fps: 10, // Frames per second
-    qrbox: { width: 250, height: 250 }, // Scanner box dimensions
+
   };
 
   const facingMode = { facingMode: "environment" }; // Use rear camera for scanning

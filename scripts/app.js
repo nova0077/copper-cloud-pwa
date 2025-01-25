@@ -1,6 +1,4 @@
-const BASE_URL = 'https://upc.up.railway.app';
-const ENV = "dev";
-console.log('App is running');
+const BASE_URL = 'https://centralarp.coppercloud.in/r2d2arp/pwabarcode?code=';
 
 // Cache configuration
 const CACHE_KEY = 'user_auth';
@@ -111,7 +109,7 @@ viewItemsButton.addEventListener('click', () => {
   homeScreen.style.display = 'none';
   scannerScreen.style.display = 'none';
   itemsScreen.style.display = 'block';
-  syncItemsToShow();
+  syncItemsToShow()
 });
 
 document.getElementById('back-to-home').addEventListener('click', () => {
@@ -253,7 +251,7 @@ async function requestPermissions() {
 let isProcessing = false;
 
 function startScanner() {
-  const videoElement = document.querySelector("#interactive");
+  const videoElement = document.querySelector("#video-element");
 
   Quagga.init(
     {
@@ -265,7 +263,7 @@ function startScanner() {
           facingMode: { ideal: "environment" }, // Prefer rear camera
           width: { min: 640, ideal: 1280 },
           height: { min: 480, ideal: 720 },
-        },        
+        },
       },
       decoder: {
         readers: ["ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader"],
@@ -337,7 +335,7 @@ async function processDetectedCode(barcode) {
 
   if (isOnline) {
     try {
-      const response = await fetch(`${BASE_URL}?upc=${barcode}`, {
+      const response = await fetch(`${BASE_URL}${barcode}`, {
         method: 'POST',
         body: JSON.stringify(scannedItem),
         headers: { 'Content-Type': 'application/json' },
@@ -435,7 +433,7 @@ function updateTableStatus(itemId, status) {
 
 // Sync items to server
 async function syncItemsToServer() {
-  if (!isOnline || ENV === "dev") return;
+  if (!isOnline) return;
 
   const items = await getItemsFromIndexedDB();
   console.log(items);

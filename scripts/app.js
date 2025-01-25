@@ -1,463 +1,162 @@
-const BASE_URL = 'https://centralarp.coppercloud.in/r2d2arp/pwabarcode?code=';
+const BASE_URL = 'https://upc.up.railway.app';
+console.log('App is running'); 
 
-// Cache configuration
-const CACHE_KEY = 'user_auth';
-const CACHE_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 1 day in milliseconds
+const startScannerButton = document.getElementById('start-scanner');
+const itemDetails = document.getElementById('item-details');
 
-// Check authentication at the start of the app
-function checkAuthentication() {
-  const cachedData = localStorage.getItem(CACHE_KEY);
-
-  if (cachedData) {
-    const { username, timestamp } = JSON.parse(cachedData);
-    const currentTime = Date.now();
-
-    // Validate cached credentials and check expiration
-    if (username === 'admin' && currentTime - timestamp < CACHE_EXPIRATION_MS) {
-      console.log('User authenticated');
-      return true;
-    } else {
-      console.log('Session expired. Clearing cache.');
-      localStorage.removeItem(CACHE_KEY); // Clear expired cache
-    }
-  } else {
-    console.log('No user authentication found.');
-  }
-
-  // Redirect to login page if not authenticated
-  window.location.href = 'login.html';
-  return false;
-}
-
-// Request notification permission
-if ('Notification' in window) {
-  Notification.requestPermission().then((permission) => {
-    if (permission === 'granted') {
-      console.log('Notification permission granted.');
-    } else {
-      console.log('Notification permission denied.');
-    }
-  });
-}
-const STORAGE_KEY = 'scanned_items';
 let isScanning = false;
+
+const STORAGE_KEY = 'scanned_items';
 let isOnline = navigator.onLine;
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/service-worker.js')
-    .then(() => console.log('Service Worker Registered'))
-    .catch((error) => console.error('Service Worker Registration Failed:', error));
-}
-
-// DOM Elements
-const homeScreen = document.getElementById('home-screen');
-const scannerScreen = document.getElementById('scanner-screen');
-const itemsScreen = document.getElementById('items-screen');
-const scanCodeButton = document.getElementById('scan-code');
-const viewItemsButton = document.getElementById('view-items');
-const backToHomeButton = document.getElementById('back-to-home');
-const backToHomeFromItemsButton = document.getElementById('back-to-home-from-items');
-const statusHeader = document.getElementById('status-header');
-const statusText = document.getElementById('status-text');
-const startScannerButton = document.getElementById('start-scanner');
-const itemsTableBody = document.getElementById('itemsTableBody');
-
-let deferredPrompt; // Store the event for later
-
-// Listen for the `beforeinstallprompt` event
-window.addEventListener('beforeinstallprompt', (e) => {
-  console.log('beforeinstallprompt fired');
-  e.preventDefault(); // Prevent the automatic prompt
-  deferredPrompt = e; // Save the event for triggering later
-});
-
-// Navigation logic
-scanCodeButton.addEventListener('click', () => {
-  homeScreen.style.display = 'none';
-  scannerScreen.style.display = 'block';
-  itemsScreen.style.display = 'none';
-
-  // Show the Add to Home Screen prompt (if available)
-  if (deferredPrompt) {
-    deferredPrompt.prompt(); // Show the native prompt
-
-    // Wait for the user's response
-    deferredPrompt.userChoice.then((choiceResult) => {
-      if (choiceResult.outcome === 'accepted') {
-        console.log('User accepted the A2HS prompt');
-      } else {
-        console.log('User dismissed the A2HS prompt');
-      }
-      deferredPrompt = null; // Reset the prompt after use
-    });
-  } else {
-    console.log('Install prompt not available');
-  }
-});
-
-async function syncItemsToShow() {
-  const items = await getItemsFromIndexedDB(); // Get items from IndexedDB
-
-  // Loop through each item and add it to the table
-  items.forEach(item => {
-    const status = 'PENDING'; // Default to "PENDING" status if it's not synced
-    addToTable(item, status); // Add the item to the table
-  });
-}
-
-viewItemsButton.addEventListener('click', () => {
-  homeScreen.style.display = 'none';
-  scannerScreen.style.display = 'none';
-  itemsScreen.style.display = 'block';
-  syncItemsToShow()
-});
-
-document.getElementById('back-to-home').addEventListener('click', () => {
-  showHomeScreen();
-});
-
-document.getElementById('back-to-home-from-items').addEventListener('click', () => {
-  showHomeScreen();
-});
-
-function showHomeScreen() {
-  homeScreen.style.display = 'block';
-  scannerScreen.style.display = 'none';
-  itemsScreen.style.display = 'none';
-}
-
-let hasSynced = false;
-
-// Update online status and sync items
-function updateOnlineStatus() {
-  isOnline = navigator.onLine;
-
-  if (!isOnline) {
-    statusHeader.classList.remove('online');
-    statusHeader.classList.add('offline');
-    statusText.textContent = 'You are Offline';
-    startScannerButton.textContent = 'Start Scanner (Offline Mode)';
-    showOfflineMessage();
-    hasSynced = false;
-    sendPushNotification('You are offline', 'Network disconnected');
-  } else {
-    statusHeader.classList.remove('offline');
-    statusHeader.classList.add('online');
-    statusText.textContent = 'You are Online';
-    startScannerButton.textContent = 'Start Scanner';
-    hideOfflineMessage();
-    if (!hasSynced) {
-      syncItemsToServer();
-    }
-  }
-}
-
-function showOfflineMessage() {
-  const existingMsg = document.getElementById('offline-msg');
-  if (!existingMsg) {
-    const msg = document.createElement('div');
-    msg.id = 'offline-msg';
-    msg.className = 'offline-warning';
-    msg.textContent = 'Not connected to the Internet';
-    startScannerButton.parentNode.insertBefore(msg, startScannerButton);
-  }
-}
-
-function hideOfflineMessage() {
-  const msg = document.getElementById('offline-msg');
-  if (msg) msg.remove();
-}
-
-// Event listeners for online and offline status
+// Add these event listeners for online/offline status
 window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 
-// Push Notification
-function sendPushNotification(title, message) {
-  if ('Notification' in window && Notification.permission === 'granted') {
-    navigator.serviceWorker.ready.then((registration) => {
-      registration.showNotification(title, {
-        body: message,
-        icon: '/icon.png'
-      });
-    });
-  } else {
-    console.log('Notification permission not granted');
-  }
+function updateOnlineStatus() {
+    isOnline = navigator.onLine;
+    startScannerButton.disabled = !isOnline;
+    if (!isOnline) {
+        startScannerButton.textContent = 'Start Scanner';
+        Quagga.stop();
+        isScanning = false;
+        showOfflineMessage();
+    } else {
+        startScannerButton.textContent = 'Start Scanner';
+        hideOfflineMessage();
+    }
 }
 
-// Start/Stop Scanner
-startScannerButton.addEventListener('click', async () => {
-  if (isScanning) {
-    html5QrCode.stop();
-    startScannerButton.textContent = 'Start Scanner';
-    isScanning = false;
-  } else {
-    try {
-      // Request camera and location permissions
-      await requestPermissions();
-
-      // Start the scanner if permissions are granted
-      startScanner();
-      startScannerButton.textContent = 'Stop Scanner';
-      isScanning = true;
-    } catch (error) {
-      console.error('Permission request failed:', error.message);
-      alert('Both camera and location permissions are required to start the scanner.');
+function showOfflineMessage() {
+    const existingMsg = document.getElementById('offline-msg');
+    if (!existingMsg) {
+        const msg = document.createElement('div');
+        msg.id = 'offline-msg';
+        msg.className = 'offline-warning';
+        msg.textContent = 'Not connected to the Internet';
+        startScannerButton.parentNode.insertBefore(msg, startScannerButton);
     }
-  }
+}
+
+function hideOfflineMessage() {
+    const msg = document.getElementById('offline-msg');
+    if (msg) msg.remove();
+}
+
+startScannerButton.addEventListener('click', () => {
+    if (isScanning) {
+        Quagga.stop();
+        startScannerButton.textContent = 'Start Scanner';
+        isScanning = false;
+    } else {
+        startScanner();
+        startScannerButton.textContent = 'Stop Scanner';
+        isScanning = true;
+    }
 });
 
-// Function to request camera and location permissions
-async function requestPermissions() {
-  // Request camera permission
-  try {
-    await navigator.mediaDevices.getUserMedia({ video: true });
-    console.log('Camera permission granted.');
-  } catch (error) {
-    throw new Error('Camera permission denied. Please allow access to the camera.');
-  }
-
-  // Request location permission
-  if (!navigator.geolocation) {
-    console.warn('Geolocation is not supported by your browser.');
-    return null; // Skip location if not supported
-  }
-
-  return new Promise((resolve, reject) => {
-    if (!isOnline) {
-      // Fallback for offline mode
-      console.warn('Offline mode: Skipping live geolocation.');
-      resolve({ latitude: 0, longitude: 0 }); // Return default or mock coordinates
-    } else {
-      // Fetch live geolocation when online
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          console.log('Location permission granted.');
-          resolve({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          });
-        },
-        (error) => {
-          console.error('Location permission denied:', error.message);
-          reject(new Error('Location permission denied.'));
-        }
-      );
-    }
-  });
-}
-
-let isProcessing = false;
-let currentStream = null; // To hold the active MediaStream
-
-function stopCurrentStream() {
-  if (currentStream) {
-    currentStream.getTracks().forEach((track) => track.stop()); // Stop all tracks
-    console.log("Camera stream stopped.");
-    currentStream = null; // Reset the stream
-  }
-}
-
-
 function startScanner() {
-  stopCurrentStream();
-  const html5QrCode = new Html5Qrcode("interactive"); // Attach to your video container
-  const config = {
+    Quagga.init({
+        inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: document.querySelector("#interactive"),
+            constraints: {
+                facingMode: "environment",
+                width: 640,
+                height: 300,
+                aspectRatio: { min: 1, max: 2 }
+            },
+        },
+        decoder: {
+            readers: ["ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader"]
+        }
+    }, function(err) {
+        if (err) {
+            console.error(err);
+            return;
+        }
+        Quagga.start();
+    });
 
-  };
-
-  const facingMode = { facingMode: "environment" }; // Use rear camera for scanning
-
-  html5QrCode
-    .start(
-      facingMode, // Camera facing mode
-      config, // Configuration
-      async (decodedText, decodedResult) => {
-        console.log("Detected barcode:", decodedText);
-        await processDetectedCode(decodedText); // Call your custom processing function
-        html5QrCode.stop(); // Stop the scanner after successful detection
-        alert(`Detected code: ${decodedText}`);
-      },
-      (errorMessage) => {
-        console.warn("QR Code scan error:", errorMessage); // Handle scanning errors
-      }
-    )
-    .catch((err) => {
-      console.error("Error initializing scanner:", err.message);
-      alert(`Scanner initialization failed: ${err.message}`);
+    Quagga.onDetected(function(result) {
+        const code = result.codeResult.code;
+        Quagga.stop();
+        startScannerButton.textContent = 'Start Scanner';
+        isScanning = false;
+        // Process the detected code
+        lookupProduct(code);
     });
 }
 
-function addToTable(item, status) {
-  const table = document.getElementById('itemsTableBody');
-  const row = document.createElement('tr');
-  const formattedTimestamp = new Date(item.timestamp).toLocaleString();
-  row.innerHTML = `
-        <td>${item.id}</td>
-        <td>${formattedTimestamp}</td>
-        <td>${item.username}</td>
-        <td><span class="${status === "DONE" ? "status-done" : "status-pending"}">${status}</span></td>
-    `;
-  table.appendChild(row);
-}
-
-// Handle scanned barcode
-async function processDetectedCode(barcode) {
-  console.log('Processing barcode:', barcode);
-
-  const cachedData = localStorage.getItem('user_auth');
-  if (!cachedData) {
-    console.error('User is not logged in!');
-    return;
-  }
-
-  const { username } = JSON.parse(cachedData);
-
-  // Prepare scanned item
-  const scannedItem = {
-    id: barcode,
-    timestamp: new Date().toISOString(),
-    location: isOnline ? await getCurrentLocation() : { latitude: 0, longitude: 0 }, // Fallback for location
-    username,
-  };
-
-  if (isOnline) {
+async function lookupProduct(barcode) {
+    console.log('Looking up product:', barcode);
     try {
-      const response = await fetch(`${BASE_URL}${barcode}`, {
-        method: 'POST',
-        body: JSON.stringify(scannedItem),
-        headers: { 'Content-Type': 'application/json' },
-      });
+        if (!isOnline) {
+            throw new Error('No internet connection');
+        }
 
-      if (response.ok) {
-        console.log(`Barcode ${barcode} processed successfully.`);
-        addToTable(scannedItem, 'DONE');
-      } else {
-        console.error('Failed to process barcode online. Saving to IndexedDB.');
-        await saveItemToIndexedDB(scannedItem);
-        addToTable(scannedItem, 'PENDING');
-      }
+        const response = await fetch(`${BASE_URL}?upc=${barcode}`);
+        const data = await response.json();
+        
+        if (data.items && data.items.length > 0) {
+            const item = data.items[0];
+            const scannedItem = {
+                id: barcode,
+                title: item.title,
+                brand: item.brand,
+                description: item.description,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Store the item locally
+            saveItemToStorage(scannedItem);
+            
+            // Display all items including the new one
+            displayScannedItems();
+        } else {
+            itemDetails.innerHTML = `<p>No product found for barcode: ${barcode}</p>`;
+        }
     } catch (error) {
-      console.error('Error sending barcode to the server:', error.message);
-      await saveItemToIndexedDB(scannedItem);
-      addToTable(scannedItem, 'PENDING');
+        itemDetails.innerHTML = `<p>Error looking up product: ${error.message}</p>`;
+        displayScannedItems(); // Still show stored items even if lookup fails
     }
-  } else {
-    console.log('Offline mode: Saving barcode to IndexedDB.');
-    await saveItemToIndexedDB(scannedItem);
-    addToTable(scannedItem, 'PENDING');
-  }
 }
 
-async function getCurrentLocation() {
-  if (!navigator.geolocation) {
-    console.warn('Geolocation is not supported by your browser.');
-    return null;
-  }
-
-  return new Promise((resolve) => {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        resolve({ latitude, longitude });
-      },
-      (error) => {
-        console.warn('Error fetching location:', error.message);
-        resolve(null);
-      }
-    );
-  });
-}
-
-// IndexedDB functions
-function openDatabase() {
-  return idb.openDB('scanned-items-db', 1, {
-    upgrade(db) {
-      if (!db.objectStoreNames.contains('items')) {
-        db.createObjectStore('items', { keyPath: 'id' });
-      }
+function saveItemToStorage(item) {
+    const items = getStoredItems();
+    const existingItemIndex = items.findIndex(i => i.id === item.id);
+    
+    if (existingItemIndex >= 0) {
+        items[existingItemIndex] = item;
+    } else {
+        items.unshift(item); // Add new items to the beginning of the list
     }
-  });
+    
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 }
 
-async function saveItemToIndexedDB(item) {
-  const db = await openDatabase();
-  const tx = db.transaction('items', 'readwrite');
-  const store = tx.objectStore('items');
-  await store.put(item);
-  await tx.done;
+function getStoredItems() {
+    const items = localStorage.getItem(STORAGE_KEY);
+    return items ? JSON.parse(items) : [];
 }
 
-async function getItemsFromIndexedDB() {
-  const db = await openDatabase();
-  const tx = db.transaction('items', 'readonly');
-  const store = tx.objectStore('items');
-  const items = await store.getAll();
-  await tx.done;
-  return items;
+function displayScannedItems() {
+    const items = getStoredItems();
+    
+    itemDetails.innerHTML = items.length ? 
+        items.map(item => `
+            <div class="scanned-item">
+                <p><strong>Title:</strong> ${item.title || 'N/A'}</p>
+                <p><strong>Brand:</strong> ${item.brand || 'N/A'}</p>
+                <p><strong>Description:</strong> ${item.description || 'N/A'}</p>
+                <p><strong>UPC:</strong> ${item.id}</p>
+                <p><strong>Scanned:</strong> ${new Date(item.timestamp).toLocaleString()}</p>
+            </div>
+        `).join('<hr>') :
+        '<p>No items scanned yet</p>';
 }
 
-async function removeItemFromIndexedDB(id) {
-  const db = await openDatabase();
-  const tx = db.transaction('items', 'readwrite');
-  const store = tx.objectStore('items');
-  await store.delete(id);
-  await tx.done;
-}
-
-function updateTableStatus(itemId, status) {
-  const table = document.getElementById('items-table-body');
-  const rows = table.getElementsByTagName('tr');
-
-  for (let row of rows) {
-    const idCell = row.cells[0];
-    if (idCell && idCell.textContent === itemId) {
-      const statusCell = row.cells[3];
-      statusCell.innerHTML = `<span class="${newStatus === "DONE" ? "status-done" : "status-pending"
-        }">${newStatus}</span>`;
-    }
-  }
-}
-
-// Sync items to server
-async function syncItemsToServer() {
-  if (!isOnline) return;
-
-  const items = await getItemsFromIndexedDB();
-  console.log(items);
-
-  if (items.length === 0) {
-    console.log('No items to sync.');
-    return; // Nothing to sync, avoid notification
-  }
-  for (const item of items) {
-    try {
-      const response = await fetch(`${BASE_URL}?upc=${item.id}`, {
-        method: 'POST',
-        body: JSON.stringify(item),
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      if (response.ok) {
-        console.log(`Synced item ${item.id}`);
-        await removeItemFromIndexedDB(item.id);
-        updateTableStatus(item.id, 'DONE');
-      } else {
-        console.error('Failed to sync item:', item.id);
-      }
-    } catch (error) {
-      console.error(`Failed to sync item ${item.id}`, error);
-    }
-  }
-  showNotification("All items have been synced with the server");
-  hasSynced = true;
-}
-
-// Run authentication check before initializing the app
-if (checkAuthentication()) {
-  updateOnlineStatus();
-  showHomeScreen();
-} else {
-  showNotification("Login is Required");
-}
+// Call these when the page loads
+updateOnlineStatus();
+displayScannedItems(); 

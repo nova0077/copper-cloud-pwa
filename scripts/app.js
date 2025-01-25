@@ -4,6 +4,18 @@ const BASE_URL = 'https://centralarp.coppercloud.in/r2d2arp/pwabarcode?code=';
 const CACHE_KEY = 'user_auth';
 const CACHE_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 1 day in milliseconds
 
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/service-worker.js")
+      .then((registration) => {
+        console.log("Service Worker registered with scope:", registration.scope);
+      })
+      .catch((error) => {
+        console.error("Service Worker registration failed:", error);
+      });
+  });
+}
 
 // Check authentication at the start of the app
 function checkAuthentication() {
@@ -72,11 +84,9 @@ scanCodeButton.addEventListener('click', () => {
   homeScreen.style.display = 'none';
   scannerScreen.style.display = 'block';
   itemsScreen.style.display = 'none';
-
   // Show the Add to Home Screen prompt (if available)
   if (deferredPrompt) {
     deferredPrompt.prompt(); // Show the native prompt
-
     // Wait for the user's response
     deferredPrompt.userChoice.then((choiceResult) => {
       if (choiceResult.outcome === 'accepted') {

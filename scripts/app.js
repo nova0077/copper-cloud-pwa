@@ -189,7 +189,7 @@ function sendPushNotification(title, message) {
 // Start/Stop Scanner
 startScannerButton.addEventListener('click', async () => {
   if (isScanning) {
-    Quagga.stop();
+    html5QrCode.stop();
     startScannerButton.textContent = 'Start Scanner';
     isScanning = false;
   } else {
@@ -251,50 +251,32 @@ async function requestPermissions() {
 let isProcessing = false;
 
 function startScanner() {
-  Quagga.init({
-      inputStream: {
-          name: "Live",
-          type: "LiveStream",
-          target: document.querySelector("#interactive"),
-          constraints: {
-              facingMode: "environment",
-              width: 640,
-              height: 300,
-              aspectRatio: { min: 1, max: 2 }
-          },
+  const html5QrCode = new Html5Qrcode("interactive"); // Attach to your video container
+  const config = {
+    fps: 10, // Frames per second
+    qrbox: { width: 250, height: 250 }, // Scanner box dimensions
+  };
+
+  const facingMode = { facingMode: "environment" }; // Use rear camera for scanning
+
+  html5QrCode
+    .start(
+      facingMode, // Camera facing mode
+      config, // Configuration
+      async (decodedText, decodedResult) => {
+        console.log("Detected barcode:", decodedText);
+        await processDetectedCode(decodedText); // Call your custom processing function
+        html5QrCode.stop(); // Stop the scanner after successful detection
+        alert(`Detected code: ${decodedText}`);
       },
-      decoder: {
-          readers: ["ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader"]
+      (errorMessage) => {
+        console.warn("QR Code scan error:", errorMessage); // Handle scanning errors
       }
-    }, function (err) {
-      if (err) {
-        console.error('Error initializing scanner:', err.message);
-        alert(err);
-        requestPermissions();
-        return;
-      }
-      console.log('Scanner initialized successfully.');
-      Quagga.start();
-    }
-  );
-
-  Quagga.onDetected(async function (result) {
-    if (isProcessing) return; // Prevent duplicate calls
-    isProcessing = true;
-
-    try {
-      const code = result.codeResult.code;
-      console.log('Detected barcode:', code);
-      Quagga.stop(); // Stop scanner after detection
-      startScannerButton.textContent = 'Start Scanner';
-      isScanning = false;
-      await processDetectedCode(code); // Process barcode
-    } catch (error) {
-      console.error('Error processing barcode:', error.message);
-    } finally {
-      isProcessing = false; // Reset flag
-    }
-  });
+    )
+    .catch((err) => {
+      console.error("Error initializing scanner:", err.message);
+      alert(`Scanner initialization failed: ${err.message}`);
+    });
 }
 
 function addToTable(item, status) {

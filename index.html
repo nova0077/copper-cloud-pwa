@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,6 +25,7 @@
   <link rel="stylesheet" href="styles/style.css">
   <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
 </head>
+
 <body>
   <!-- Online/Offline Status -->
   <div id="status-header">
@@ -34,6 +36,7 @@
   <div id="top-navigation">
     <button id="scan-code">Scan Code</button>
     <button id="view-items">View Items</button>
+    <button id="install-app">Install App</button>
   </div>
 
   <!-- Home Screen -->
@@ -45,8 +48,10 @@
   <!-- Scanner Screen -->
   <div id="scanner-screen">
     <h2>Scan a Barcode</h2>
-    <div id="interactive" class="viewport"></div>
-    <div>
+    <div class="section">
+      <div id="my-qr-reader"></div>
+    </div>
+    <div class="navbar-buttons">
       <button id="start-scanner">Start Scanner</button>
       <button id="back-to-home">Back to Home</button>
     </div>
@@ -66,20 +71,7 @@
           </tr>
         </thead>
         <tbody id="itemsTableBody">
-          <!-- Dynamically populated -->
-           <!-- Example rows -->
-            <tr>
-              <td>123456789</td>
-              <td>2025-01-24</td>
-              <td>admin</td>
-              <td><span class="status-done">DONE</span></td>
-          </tr>
-          <tr>
-              <td>987654321</td>
-              <td>2025-01-24</td>
-              <td>admin</td>
-              <td><span class="status-pending">PENDING</span></td>
-          </tr>
+          <!-- Items will be added here -->
         </tbody>
       </table>
     </div>
@@ -87,8 +79,12 @@
       <button id="back-to-home-from-items">Back to Home</button>
     </div>
   </div>
-  <script src="/libs/html5-qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdn.jsdelivr.net/npm/idb@7/build/umd.js"></script>
+  <script src="scripts/idb.js"></script>
+  <script src="scripts/utils.js"></script>
+  <script src="scripts/permissions.js"></script>
   <script src="scripts/app.js"></script>
 </body>
+
 </html>

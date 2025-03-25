@@ -1,16 +1,23 @@
+importScripts('/scripts/idb.js');
+importScripts('/scripts/utils.js');
+
 const CACHE_NAME = 'pwa-coppercloud-cache-v1';
 const urlsToCache = [
   '/',
   '/login.html',
   '/index.html',
+  '/scripts/idb.js',
   '/scripts/app.js',
+  '/scripts/utils.js',
   '/scripts/login.js',
+  '/scripts/permissions.js',
   '/styles/style.css',
   '/styles/login.css',
-  'https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js',
+  "https://unpkg.com/html5-qrcode",
   'https://cdn.jsdelivr.net/npm/idb@7/build/umd.js',
   '/icons/icon.png'
 ];
+
 
 // Install event
 self.addEventListener('install', (event) => {
@@ -24,6 +31,27 @@ self.addEventListener('install', (event) => {
   );
 });
 
+
+// Activate event
+self.addEventListener('activate', (event) => {
+  const cacheWhitelist = [CACHE_NAME];
+  event.waitUntil(
+    caches.keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (!cacheWhitelist.includes(cacheName)) {
+              console.log('[ServiceWorker] Deleting cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      })
+  );
+  return self.clients.claim();
+});
+
+
 // Fetch event
 self.addEventListener('fetch', (event) => {
   event.respondWith(
@@ -36,30 +64,38 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Activate event
-self.addEventListener('activate', (event) => {
-  const cacheWhitelist = [CACHE_NAME];
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (!cacheWhitelist.includes(cacheName)) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
-  );
-});
 
-// Push notifications
+// Receives push notifications from push API
 self.addEventListener('push', (event) => {
+  console.log('Push notification received:', event);
+
   const data = event.data.json();
   const title = data.title || 'Notification';
   const options = {
     body: data.body || 'You have a new message',
-    icon: data.icon || '/icons/icon.png',
-    badge: data.badge || '/icons/badge.png',
+    icon: '/icons/icon.png',
+    badge: '/icons/icon.png',
   };
   event.waitUntil(self.registration.showNotification(title, options));
+});
+
+
+// useful when adding action option in push-notifications
+self.addEventListener('notification-click', (event) => {
+  var notification = event.notification;
+  var action = event.action;
+  // console.log(notification);
+  if (action === 'confirm') {
+   // console.log('Confirm was chosen');
+    notification.close();
+  }
+  else {
+    // console.log(action);
+    notification.close();
+  }
+});
+
+// useful when notification was closed without clicking on it
+self.addEventListener('notificationclose', (event) => {
+  // console.log('Notification was closed', event);
 });

@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:4040';
+const BASE_URL = 'https://be-cc-pwa.onrender.com';
 
 
 // Cache configuration for Auth

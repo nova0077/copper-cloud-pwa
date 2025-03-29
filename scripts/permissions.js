@@ -41,7 +41,7 @@ async function requestPermissions() {
 
 const sendSubscriptionToServer = async (subscription) => {
   console.log("Sending subscription to server:", subscription);
-  const SERVER_URL = 'http://localhost:4040/save-subscription'
+  const SERVER_URL = 'https://be-cc-pwa.onrender.com/save-subscription'
   const response = await fetch(SERVER_URL, {
     method: 'POST',
     headers: {

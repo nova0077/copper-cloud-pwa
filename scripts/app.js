@@ -128,7 +128,7 @@ async function syncServerItemsToShow() {
 
 
 async function syncItemsToShow() {
-  const items = await getItemsFromIndexedDB("scanned-items"); 
+  const items = await getItemsFromIndexedDB("scanned-items");
   const table = document.querySelector("#itemsTable");
 
   items.forEach((item) => {
@@ -147,7 +147,7 @@ viewItemsButton.addEventListener('click', async () => {
   scannerScreen.style.display = 'none';
   itemsScreen.style.display = 'block';
   scanCodeButton.style.display = 'block';
-  
+
   await syncServerItemsToShow();  // Step 1: Fetch and add items from the server
   await syncItemsToShow();         // Step 2: Fetch and add pending items from IndexedDB
 });
@@ -234,25 +234,40 @@ startScannerButton.addEventListener('click', async () => {
 });
 
 
-function startScanner() {
+async function stopAllCameras() {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const videoDevices = devices.filter(device => device.kind === "videoinput");
 
-  let html5QrcodeScanner = new Html5QrcodeScanner(
-    "my-qr-reader", { fps: 10, qrbox: 250 });
-
-  function onScanSuccess(decodedText, decodedResult) {
-    // Handle on success condition with the decoded text or result.
-    console.log(`Scan result: ${decodedText}`, decodedResult);
-    html5QrcodeScanner.clear();
-    processDetectedCode(decodedText);
+  for (const device of videoDevices) {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: device.deviceId } });
+    stream.getTracks().forEach(track => track.stop());
   }
+}
 
-  function onScanError(errorMessage) {
-    // handle on error condition, with error message
-    console.log(errorMessage);
-    return;
+
+async function startScanner() {
+  try {
+    await stopAllCameras();
+    let html5QrcodeScanner = new Html5QrcodeScanner(
+      "my-qr-reader", { fps: 10, qrbox: 250 });
+
+    function onScanSuccess(decodedText, decodedResult) {
+      // Handle on success condition with the decoded text or result.
+      console.log(`Scan result: ${decodedText}`, decodedResult);
+      html5QrcodeScanner.clear();
+      processDetectedCode(decodedText);
+    }
+
+    function onScanError(errorMessage) {
+      // handle on error condition, with error message
+      console.log(errorMessage);
+      requestPermissions(); // Ask for permissions again
+      return;
+    }
+    html5QrcodeScanner.render(onScanSuccess, onScanError);
+  } catch (error) {
+    console.error("Failed to start scanner", error);
   }
-
-  html5QrcodeScanner.render(onScanSuccess, onScanError);
 }
 
 

@@ -234,40 +234,30 @@ startScannerButton.addEventListener('click', async () => {
 });
 
 
-async function stopAllCameras() {
-  const devices = await navigator.mediaDevices.enumerateDevices();
-  const videoDevices = devices.filter(device => device.kind === "videoinput");
-
-  for (const device of videoDevices) {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: device.deviceId } });
-    stream.getTracks().forEach(track => track.stop());
-  }
-}
-
-
 async function startScanner() {
+
   try {
-    await stopAllCameras();
-    let html5QrcodeScanner = new Html5QrcodeScanner(
-      "my-qr-reader", { fps: 10, qrbox: 250 });
-
+    const html5QrCode = new Html5Qrcode("my-qr-reader");
     function onScanSuccess(decodedText, decodedResult) {
-      // Handle on success condition with the decoded text or result.
-      console.log(`Scan result: ${decodedText}`, decodedResult);
-      html5QrcodeScanner.clear();
+      // handle the scanned code as you like, for example:
       processDetectedCode(decodedText);
+      console.log(`Code matched = ${decodedText}`, decodedResult);
     }
-
-    function onScanError(errorMessage) {
-      // handle on error condition, with error message
-      console.log(errorMessage);
-      requestPermissions(); // Ask for permissions again
-      return;
-    }
-    html5QrcodeScanner.render(onScanSuccess, onScanError);
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+    html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
   } catch (error) {
-    console.error("Failed to start scanner", error);
+    console.error('Error initializing scanner:', error);
+    showSnackbar('Error initializing scanner');
   }
+  // Stop the scanner after a timeout
+  setTimeout(() => {
+    html5QrCode.stop().then((ignore) => {
+      console.log('QR Code scanning stopped.');
+      startScannerButton.style.display = 'block';
+    }).catch((err) => {
+      console.error('Error stopping scanner:', err);
+    });
+  }, 60000); // Stop after 10 seconds
 }
 
 

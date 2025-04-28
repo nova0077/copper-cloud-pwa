@@ -1,7 +1,7 @@
 importScripts('/scripts/idb.js');
 importScripts('/scripts/utils.js');
 
-const CACHE_NAME = 'pwa-coppercloud-cache-v3';
+const CACHE_NAME = 'pwa-coppercloud-cache-v4';
 const urlsToCache = [
   '/',
   '/login.html',

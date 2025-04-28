@@ -235,7 +235,7 @@ startScannerButton.addEventListener('click', async () => {
 
 
 async function startScanner() {
-
+  await requestPermissions();
   try {
     const html5QrCode = new Html5Qrcode("my-qr-reader");
     function onScanSuccess(decodedText, decodedResult) {

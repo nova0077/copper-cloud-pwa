@@ -236,7 +236,7 @@ startScannerButton.addEventListener('click', async () => {
 
 async function startScanner() {
   await requestPermissions();
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+  navigator.mediaDevices.getUserMedia()
     .then((stream) => {
       stream.getVideoTracks().forEach(track => track.stop());
       console.log('Previous streams stopped');

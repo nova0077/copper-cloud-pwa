@@ -236,30 +236,23 @@ startScannerButton.addEventListener('click', async () => {
 
 async function startScanner() {
   await requestPermissions();
-  try {
-    const html5QrCode = new Html5Qrcode("my-qr-reader");
-    function onScanSuccess(decodedText, decodedResult) {
-      // handle the scanned code as you like, for example:
-      processDetectedCode(decodedText);
-      console.log(`Code matched = ${decodedText}`, decodedResult);
-    }
-    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-    html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
-  } catch (error) {
-    console.error('Error initializing scanner:', error);
-    showSnackbar('Error initializing scanner');
+  function onScanSuccess(decodedText, decodedResult) {
+    processDetectedCode(decodedText);
+    console.log(`Code matched = ${decodedText}`, decodedResult);
   }
-  // Stop the scanner after a timeout
-  setTimeout(() => {
-    html5QrCode.stop().then((ignore) => {
-      console.log('QR Code scanning stopped.');
-      startScannerButton.style.display = 'block';
-    }).catch((err) => {
-      console.error('Error stopping scanner:', err);
-    });
-  }, 60000); // Stop after 10 seconds
-}
 
+  let config = {
+    fps: 10,
+    qrbox: { width: 200, height: 200 },
+    facingMode: "environment",
+    rememberLastUsedCamera: true,
+    supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA,]
+  };
+
+  let html5QrcodeScanner = new Html5QrcodeScanner(
+    "my-qr-reader", config, /* verbose= */ false);
+  html5QrcodeScanner.render(onScanSuccess);
+}
 
 function addToTable(item, status) {
   const table = document.getElementById('itemsTableBody');

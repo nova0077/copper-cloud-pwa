@@ -1,12 +1,5 @@
 // Function to request camera and location permissions
 async function requestPermissions() {
-  // Request camera permission
-  try {
-    await navigator.mediaDevices.getUserMedia({ video: true });
-    console.log('Camera permission granted.');
-  } catch (error) {
-    throw new Error('Camera permission denied. Please allow access to the camera.');
-  }
 
   // Request location permission
   if (!navigator.geolocation) {

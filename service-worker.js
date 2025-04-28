@@ -1,7 +1,7 @@
 importScripts('/scripts/idb.js');
 importScripts('/scripts/utils.js');
 
-const CACHE_NAME = 'pwa-coppercloud-cache-v4';
+const CACHE_NAME = 'pwa-coppercloud-cache-v5';
 const urlsToCache = [
   '/',
   '/login.html',
@@ -86,7 +86,7 @@ self.addEventListener('notification-click', (event) => {
   var action = event.action;
   // console.log(notification);
   if (action === 'confirm') {
-   // console.log('Confirm was chosen');
+    // console.log('Confirm was chosen');
     notification.close();
   }
   else {

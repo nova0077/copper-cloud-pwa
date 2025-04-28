@@ -236,6 +236,11 @@ startScannerButton.addEventListener('click', async () => {
 
 async function startScanner() {
   await requestPermissions();
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then((stream) => {
+      stream.getVideoTracks().forEach(track => track.stop());
+      console.log('Previous streams stopped');
+    })
   function onScanSuccess(decodedText, decodedResult) {
     processDetectedCode(decodedText);
     console.log(`Code matched = ${decodedText}`, decodedResult);

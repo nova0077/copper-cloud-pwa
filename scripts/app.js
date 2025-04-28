@@ -235,28 +235,33 @@ startScannerButton.addEventListener('click', async () => {
 
 
 async function startScanner() {
-  await requestPermissions();
-  navigator.mediaDevices.getUserMedia()
-    .then((stream) => {
-      stream.getVideoTracks().forEach(track => track.stop());
-      console.log('Previous streams stopped');
-    })
-  function onScanSuccess(decodedText, decodedResult) {
-    processDetectedCode(decodedText);
-    console.log(`Code matched = ${decodedText}`, decodedResult);
+  try {
+    navigator.mediaDevices.getUserMedia()
+      .then((stream) => {
+        stream.getVideoTracks().forEach(track => track.stop());
+        console.log('Previous streams stopped');
+      })
+    function onScanSuccess(decodedText, decodedResult) {
+      processDetectedCode(decodedText);
+      console.log(`Code matched = ${decodedText}`, decodedResult);
+    }
+
+    let config = {
+      fps: 10,
+      qrbox: { width: 200, height: 200 },
+      facingMode: "environment",
+      rememberLastUsedCamera: true,
+      supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA,]
+    };
+
+    let html5QrcodeScanner = new Html5QrcodeScanner(
+      "my-qr-reader", config, /* verbose= */ false);
+    html5QrcodeScanner.render(onScanSuccess);
+  } catch (error) {
+    alert(error.message);
+    console.error('Error starting scanner:', error);
+    showSnackbar('Error starting scanner');
   }
-
-  let config = {
-    fps: 10,
-    qrbox: { width: 200, height: 200 },
-    facingMode: "environment",
-    rememberLastUsedCamera: true,
-    supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA,]
-  };
-
-  let html5QrcodeScanner = new Html5QrcodeScanner(
-    "my-qr-reader", config, /* verbose= */ false);
-  html5QrcodeScanner.render(onScanSuccess);
 }
 
 function addToTable(item, status) {
